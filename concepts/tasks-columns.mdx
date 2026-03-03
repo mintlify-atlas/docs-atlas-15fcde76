@@ -42,17 +42,21 @@ Columns are displayed in the UI ordered by their `Position` value, from left to 
 
 The `TaskItem` model is defined in `Models/TaskItem.cs`:
 
-| Property | Type | Required | Max Length | Description |
-|----------|------|----------|------------|-------------|
-| `Id` | `int` | Auto | - | Unique task identifier |
-| `Title` | `string` | Yes | 150 | Task title |
-| `Description` | `string` | No | - | Detailed task description |
-| `ColumnId` | `int` | Yes | - | Parent column identifier |
-| `AssignedTo` | `int?` | No | - | User ID of assigned user (nullable) |
-| `Position` | `int` | Auto | - | Zero-based position within the column |
-| `DueDate` | `DateTime?` | No | - | Optional due date |
-| `CreatedAt` | `DateTime` | Auto | - | UTC timestamp of creation |
-| `IsDeleted` | `bool` | Auto | - | Soft delete flag (default: `false`) |
+| Property | Type | Required | Max Length | API Exposed | Description |
+|----------|------|----------|------------|-------------|-------------|
+| `Id` | `int` | Auto | - | Yes | Unique task identifier |
+| `Title` | `string` | Yes | 150 | Yes | Task title |
+| `Description` | `string` | No | - | Yes | Detailed task description |
+| `ColumnId` | `int` | Yes | - | Yes | Parent column identifier |
+| `Position` | `int` | Auto | - | Yes | Zero-based position within the column |
+| `AssignedTo` | `int?` | No | - | Read-only | User ID of assigned user (not settable via API) |
+| `DueDate` | `DateTime?` | No | - | Read-only | Optional due date (not settable via API) |
+| `CreatedAt` | `DateTime` | Auto | - | Read-only | UTC timestamp of creation |
+| `IsDeleted` | `bool` | Auto | - | Read-only | Soft delete flag (default: `false`) |
+
+<Note>
+Fields marked as "Read-only" exist in the database model but are not currently exposed through the Create/Update API endpoints. They may appear in response payloads when retrieving tasks.
+</Note>
 
 ### Navigation Properties
 
@@ -61,17 +65,7 @@ public TaskColumn Column { get; set; }
 public User AssignedUser { get; set; }
 ```
 
-### Task Assignment
 
-Tasks can optionally be assigned to a user:
-
-- `AssignedTo` is **nullable** - tasks can exist without being assigned
-- When assigned, the value is the `UserId` of the assigned user
-- The `AssignedUser` navigation property provides access to user details
-
-<Note>
-The assigned user must be a member of the board that contains the task.
-</Note>
 
 ## Positioning System
 
@@ -121,8 +115,8 @@ POST /api/task
 {
   "title": "New task",
   "description": "Task details",
-  "columnId": 1
-  // Position is auto-assigned within the column
+  "columnId": 1,
+  "position": 0  // Optional: specify position, otherwise auto-assigned to end
 }
 ```
 
@@ -257,9 +251,7 @@ Authorization: Bearer {token}
 {
   "title": "Implement feature X",
   "description": "Detailed description",
-  "columnId": 1,
-  "assignedTo": 5,
-  "dueDate": "2026-03-15T00:00:00Z"
+  "columnId": 1
 }
 ```
 

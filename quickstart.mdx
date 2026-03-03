@@ -64,8 +64,8 @@ print(response.json())
 
 <Info>
   On registration, TaskFlow automatically:
-  - Creates a personal board for the user
-  - Assigns the user as Owner of that board
+  - Creates a personal board named "Joel's Board"
+  - Assigns you as Owner of that board
   - Creates three default columns: "To Do", "In Progress", and "Done"
 </Info>
 
@@ -163,7 +163,7 @@ print(boards)
 [
   {
     "id": 1,
-    "name": "Joel's Personal Board",
+    "name": "Joel's Board",
     "joinCode": "ABC123"
   }
 ]
@@ -209,7 +209,7 @@ print(board)
 ```json
 {
   "id": 1,
-  "name": "Joel's Personal Board",
+  "name": "Joel's Board",
   "joinCode": "ABC123",
   "columns": [
     {
@@ -236,7 +236,7 @@ print(board)
 
 ## Step 5: Create a Task
 
-Add your first task to the "To Do" column (assuming column ID is 1).
+Add your first task to the "To Do" column (column ID 1).
 
 <CodeGroup>
 ```bash cURL
@@ -365,9 +365,9 @@ print(moved_task)
   - Shifts other tasks to maintain correct ordering
 </Info>
 
-## Step 7: Create a New Board
+## Step 7: Create Additional Boards
 
-Create additional boards for different projects.
+Create more boards for different projects.
 
 <CodeGroup>
 ```bash cURL
