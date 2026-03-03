@@ -1,0 +1,201 @@
+---
+title: CORS Configuration
+description: Configure Cross-Origin Resource Sharing (CORS) to allow Angular frontend access to TaskFlow API
+---
+
+TaskFlow API uses **CORS (Cross-Origin Resource Sharing)** to allow the Angular frontend to make requests from a different origin.
+
+## CORS Policy Setup
+
+In `Program.cs`, a CORS policy is defined to allow requests from the Angular development server:
+
+```csharp Program.cs
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:4200")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+```
+
+### Policy Configuration
+
+<ParamField path="WithOrigins" type="string[]" required>
+  Specifies allowed origin URLs. In development, this is set to `http://localhost:4200` (Angular's default dev server).
+</ParamField>
+
+<ParamField path="AllowAnyHeader" type="boolean">
+  Allows requests with any HTTP headers (Authorization, Content-Type, etc.)
+</ParamField>
+
+<ParamField path="AllowAnyMethod" type="boolean">
+  Allows all HTTP methods (GET, POST, PUT, DELETE, etc.)
+</ParamField>
+
+## Applying CORS Policy
+
+The CORS policy must be applied in the middleware pipeline:
+
+```csharp Program.cs
+var app = builder.Build();
+
+// ... other middleware
+
+app.UseCors("AllowAngular");
+
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+```
+
+<Warning>
+  `UseCors()` must be called **before** `UseAuthentication()` and `UseAuthorization()` in the middleware pipeline.
+</Warning>
+
+## Production Configuration
+
+For production environments, configure CORS based on your deployment:
+
+### Single Production Origin
+
+```csharp
+policy.WithOrigins("https://taskflow.example.com")
+      .AllowAnyHeader()
+      .AllowAnyMethod();
+```
+
+### Multiple Origins
+
+```csharp
+policy.WithOrigins(
+          "http://localhost:4200",
+          "https://taskflow.example.com",
+          "https://staging.taskflow.example.com"
+      )
+      .AllowAnyHeader()
+      .AllowAnyMethod();
+```
+
+### Environment-Based Configuration
+
+Use configuration files to manage origins per environment:
+
+```json appsettings.json
+"CorsSettings": {
+  "AllowedOrigins": ["http://localhost:4200"]
+}
+```
+
+```json appsettings.Production.json
+"CorsSettings": {
+  "AllowedOrigins": ["https://taskflow.example.com"]
+}
+```
+
+Then in `Program.cs`:
+
+```csharp
+var allowedOrigins = builder.Configuration
+    .GetSection("CorsSettings:AllowedOrigins")
+    .Get<string[]>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular",
+        policy =>
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+```
+
+## CORS Headers
+
+When properly configured, the API sends these CORS headers in responses:
+
+<ResponseField name="Access-Control-Allow-Origin" type="string">
+  The allowed origin (e.g., `http://localhost:4200`)
+</ResponseField>
+
+<ResponseField name="Access-Control-Allow-Methods" type="string">
+  Allowed HTTP methods (e.g., `GET, POST, PUT, DELETE, OPTIONS`)
+</ResponseField>
+
+<ResponseField name="Access-Control-Allow-Headers" type="string">
+  Allowed request headers (e.g., `Content-Type, Authorization`)
+</ResponseField>
+
+## Preflight Requests
+
+Browsers send OPTIONS preflight requests for cross-origin requests with:
+- Custom headers (like `Authorization: Bearer ...`)
+- Methods other than GET/POST
+- Content-Type other than simple types
+
+The CORS policy automatically handles these preflight requests.
+
+<Info>
+  When you see OPTIONS requests in your network tab, these are CORS preflight checks. They're normal and necessary for secure cross-origin communication.
+</Info>
+
+## Troubleshooting CORS
+
+<AccordionGroup>
+  <Accordion title="CORS error in browser console">
+    **Error:** `Access to XMLHttpRequest at 'http://localhost:5000/api/...' from origin 'http://localhost:4200' has been blocked by CORS policy`
+    
+    **Solutions:**
+    - Verify the origin in `WithOrigins()` exactly matches your frontend URL
+    - Ensure `UseCors()` is called before authentication middleware
+    - Check that the CORS policy name matches (`"AllowAngular"`)
+    - Clear browser cache and restart both frontend and API
+  </Accordion>
+  
+  <Accordion title="401 Unauthorized with JWT">
+    **Issue:** CORS works but authentication fails
+    
+    **Solutions:**
+    - Ensure Angular sends `Authorization: Bearer {token}` header
+    - Verify token hasn't expired
+    - Check that `AllowAnyHeader()` is configured in CORS policy
+  </Accordion>
+  
+  <Accordion title="Credentials and cookies">
+    If you need to send cookies or credentials:
+    
+    ```csharp
+    policy.WithOrigins("http://localhost:4200")
+          .AllowAnyHeader()
+          .AllowAnyMethod()
+          .AllowCredentials();
+    ```
+    
+    And in Angular:
+    ```typescript
+    { withCredentials: true }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Security Considerations
+
+<Warning>
+  Never use `AllowAnyOrigin()` in production. Always specify exact allowed origins to prevent unauthorized access from malicious websites.
+</Warning>
+
+<CardGroup cols={2}>
+  <Card title="Development" icon="laptop-code">
+    `http://localhost:4200` for local Angular dev server
+  </Card>
+  <Card title="Production" icon="shield-check">
+    Only your deployed frontend domain(s)
+  </Card>
+</CardGroup>

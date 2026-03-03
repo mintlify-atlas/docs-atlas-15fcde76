@@ -1,0 +1,49 @@
+---
+title: 'Delete Task'
+api: 'DELETE /api/task/{id}'
+---
+
+Permanently deletes a task from the system.
+
+## Authentication
+
+Requires JWT Bearer token. User must be a member of the board containing the task.
+
+## Path Parameters
+
+<ParamField path="id" type="integer" required>
+  The ID of the task to delete
+</ParamField>
+
+## Response
+
+Returns 200 OK with an empty response body on successful deletion.
+
+## Authorization Logic
+
+The endpoint verifies board membership by checking if a BoardMember record exists for the authenticated user and the task's board (TaskController.cs:127-131). Any board member can delete tasks regardless of their role.
+
+<CodeGroup>
+
+```bash cURL
+curl -X DELETE https://api.taskflow.com/api/task/42 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+```json Response
+{}
+```
+
+</CodeGroup>
+
+## Error Responses
+
+- **404 Not Found** - Task does not exist
+- **403 Forbidden** - User is not a member of the board
+- **401 Unauthorized** - Missing or invalid authentication token
+
+## Important Notes
+
+- This is a hard delete operation; the task is removed from the database immediately
+- The TaskItem model includes an `IsDeleted` flag (TaskItem.cs:25), but this endpoint does not use soft delete
+- Consider implementing soft delete logic if you need to maintain task history

@@ -1,0 +1,61 @@
+---
+title: "Delete Board"
+api: "DELETE /api/board/{id}"
+description: "Delete a board permanently (Owner only)"
+---
+
+## Authentication
+
+This endpoint requires a valid JWT Bearer token in the Authorization header. Only users with the **Owner** role can delete the board.
+
+## Path Parameters
+
+<ParamField path="id" type="integer" required>
+  The unique identifier of the board to delete
+</ParamField>
+
+## Response
+
+Returns a 200 OK status with no content on successful deletion.
+
+## Example Request
+
+```bash
+curl -X DELETE https://api.taskflow.com/api/board/1 \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+## Example Response
+
+```json
+{}
+```
+
+## Error Responses
+
+<ResponseExample>
+```json 401 Unauthorized
+{
+  "message": "Unauthorized"
+}
+```
+
+```json 403 Forbidden
+{
+  "message": "Forbidden"
+}
+```
+
+```json 404 Not Found
+{
+  "message": "Not Found"
+}
+```
+</ResponseExample>
+
+## Notes
+
+- Only board owners can delete boards
+- Members or non-members will receive a 403 Forbidden response
+- This operation is permanent and will delete all associated columns, tasks, and memberships
+- Use with caution as this action cannot be undone

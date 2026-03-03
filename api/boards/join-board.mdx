@@ -1,0 +1,81 @@
+---
+title: "Join Board"
+api: "POST /api/board/join"
+description: "Join an existing board using a join code"
+---
+
+## Authentication
+
+This endpoint requires a valid JWT Bearer token in the Authorization header.
+
+## Request Body
+
+<ParamField body="joinCode" type="string" required>
+  The 6-character join code of the board (max 10 characters)
+</ParamField>
+
+## Response
+
+Returns the board information after successfully joining.
+
+<ResponseField name="id" type="integer" required>
+  The unique identifier of the board
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  The name of the board
+</ResponseField>
+
+<ResponseField name="joinCode" type="string" required>
+  The join code used to join the board
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X POST https://api.taskflow.com/api/board/join \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "joinCode": "ABC123"
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "id": 1,
+  "name": "Marketing Campaign Board",
+  "joinCode": "ABC123"
+}
+```
+
+## Error Responses
+
+<ResponseExample>
+```json 401 Unauthorized
+{
+  "message": "Unauthorized"
+}
+```
+
+```json 404 Not Found
+{
+  "message": "Invalid join code"
+}
+```
+
+```json 400 Bad Request
+{
+  "message": "Already a member of this board"
+}
+```
+</ResponseExample>
+
+## Notes
+
+- Users joining through a join code are assigned the Member role by default
+- If the join code is invalid, a 404 error with "Invalid join code" message is returned
+- Users cannot join a board they are already a member of
+- The join code is case-sensitive

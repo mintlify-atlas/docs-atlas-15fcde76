@@ -1,0 +1,338 @@
+---
+title: Installation
+description: Set up your local TaskFlow API development environment with .NET 8, MySQL, and Entity Framework Core migrations.
+---
+
+This guide walks you through installing and configuring TaskFlow API on your local machine.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+<CardGroup cols={2}>
+  <Card title=".NET 8 SDK" icon="microsoft">
+    Download from [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/8.0)
+  </Card>
+  <Card title="MySQL Server" icon="database">
+    Version 8.0 or higher. Download from [mysql.com](https://dev.mysql.com/downloads/mysql/)
+  </Card>
+  <Card title="Git" icon="git">
+    For cloning the repository. Download from [git-scm.com](https://git-scm.com/)
+  </Card>
+  <Card title="Code Editor" icon="code">
+    Visual Studio 2022, VS Code, or JetBrains Rider
+  </Card>
+</CardGroup>
+
+<Info>
+  **Verify Installation**
+  
+  Check that .NET 8 is installed:
+  ```bash
+  dotnet --version
+  ```
+  
+  Verify MySQL is running:
+  ```bash
+  mysql --version
+  ```
+</Info>
+
+## Installation Steps
+
+<Steps>
+  <Step title="Clone the Repository">
+    Clone the TaskFlow repository to your local machine:
+    
+    ```bash
+    git clone https://github.com/yourusername/TaskFlow.git
+    cd TaskFlow
+    ```
+    
+    <Note>
+      Replace `yourusername` with the actual repository location.
+    </Note>
+  </Step>
+
+  <Step title="Configure Database Connection">
+    Open `appsettings.json` and update the connection string with your MySQL credentials:
+    
+    ```json appsettings.json
+    {
+      "ConnectionStrings": {
+        "DefaultConnection": "server=localhost;database=TaskFlowDB;user=root;password=YOUR_PASSWORD;"
+      },
+      "JwtSettings": {
+        "Key": "F8vQz9Lk2mXr7Pq4TnY6uWc1HsJd3Eb5RaZ8Kv0CpLx9Mf2Gt7Uy6Bn4DhQw1Se",
+        "Issuer": "TaskFlowAPI",
+        "Audience": "TaskFlowClient",
+        "ExpiresInMinutes": 60
+      }
+    }
+    ```
+    
+    **Connection String Parameters:**
+    - `server`: MySQL server address (usually `localhost`)
+    - `database`: Database name (`TaskFlowDB`)
+    - `user`: MySQL username (default is `root`)
+    - `password`: Your MySQL password
+    
+    <Warning>
+      **Security Best Practice**: In production, use environment variables or Azure Key Vault instead of hardcoding credentials in `appsettings.json`. Never commit sensitive credentials to version control.
+    </Warning>
+  </Step>
+
+  <Step title="Create the Database">
+    Connect to MySQL and create the database:
+    
+    ```bash
+    mysql -u root -p
+    ```
+    
+    Then in the MySQL shell:
+    
+    ```sql
+    CREATE DATABASE TaskFlowDB;
+    EXIT;
+    ```
+    
+    <Info>
+      Alternatively, Entity Framework will create the database automatically when you run migrations if it doesn't exist.
+    </Info>
+  </Step>
+
+  <Step title="Restore NuGet Packages">
+    Restore all required dependencies:
+    
+    ```bash
+    dotnet restore
+    ```
+    
+    This installs:
+    - ASP.NET Core framework packages
+    - Entity Framework Core
+    - Pomelo.EntityFrameworkCore.MySql (MySQL provider)
+    - JWT authentication libraries
+    - Swagger/OpenAPI tools
+  </Step>
+
+  <Step title="Apply Database Migrations">
+    Create the database schema using Entity Framework migrations:
+    
+    <Tabs>
+      <Tab title="Using .NET CLI">
+        ```bash
+        dotnet ef database update
+        ```
+      </Tab>
+      
+      <Tab title="Using Package Manager Console">
+        If using Visual Studio, open Package Manager Console and run:
+        ```powershell
+        Update-Database
+        ```
+      </Tab>
+    </Tabs>
+    
+    This creates the following tables:
+    - `Users` - User accounts with hashed passwords
+    - `Boards` - Board information with join codes
+    - `BoardMembers` - User-board relationships with roles
+    - `Columns` - Column definitions with positions
+    - `Tasks` - Task items with assignments and metadata
+    
+    <Note>
+      If you make changes to the models, create a new migration:
+      ```bash
+      dotnet ef migrations add YourMigrationName
+      dotnet ef database update
+      ```
+    </Note>
+  </Step>
+
+  <Step title="Run the Application">
+    Start the development server:
+    
+    ```bash
+    dotnet run
+    ```
+    
+    The API will start on the configured ports (typically `http://localhost:5000` and `https://localhost:5001`).
+    
+    You should see output similar to:
+    ```
+    info: Microsoft.Hosting.Lifetime[14]
+          Now listening on: http://localhost:5000
+    info: Microsoft.Hosting.Lifetime[14]
+          Now listening on: https://localhost:5001
+    ```
+  </Step>
+
+  <Step title="Verify Installation">
+    Open your browser and navigate to the Swagger UI:
+    
+    ```
+    http://localhost:5000/swagger
+    ```
+    
+    You should see the interactive API documentation with all available endpoints.
+    
+    <Info>
+      Swagger is only available in Development mode. The startup code in `Program.cs` conditionally enables it:
+      ```csharp
+      if (app.Environment.IsDevelopment())
+      {
+          app.UseSwagger();
+          app.UseSwaggerUI();
+      }
+      ```
+    </Info>
+  </Step>
+</Steps>
+
+## Database Configuration Details
+
+TaskFlow uses Entity Framework Core with the Pomelo MySQL provider. The DbContext is configured in `Program.cs`:
+
+```csharp Program.cs
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
+    ));
+```
+
+**Key Features:**
+- **ServerVersion.AutoDetect**: Automatically detects MySQL server version
+- **Connection pooling**: Enabled by default for better performance
+- **Lazy loading**: Disabled (uses explicit `.Include()` for related data)
+
+## JWT Configuration
+
+The JWT authentication is configured in `Program.cs` with the following settings:
+
+```csharp Program.cs
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(key)
+    };
+});
+```
+
+**Token Claims:**
+- `NameIdentifier`: User ID
+- `Email`: User email address
+- `Name`: Username
+
+<Warning>
+  **Production Security**: 
+  - Generate a strong, unique secret key (minimum 32 characters)
+  - Set `RequireHttpsMetadata = true` in production
+  - Use HTTPS for all API communication
+  - Store the JWT key in environment variables or a secure vault
+</Warning>
+
+## CORS Configuration
+
+The API is configured to allow requests from an Angular frontend on `http://localhost:4200`:
+
+```csharp Program.cs
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:4200")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+```
+
+<Info>
+  To allow requests from different origins, update the `WithOrigins()` configuration or create additional CORS policies.
+</Info>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection Error: Unable to connect to MySQL">
+    **Possible causes:**
+    - MySQL server is not running
+    - Incorrect credentials in connection string
+    - Wrong server address or port
+    
+    **Solutions:**
+    1. Verify MySQL is running: `sudo systemctl status mysql` (Linux) or check Services (Windows)
+    2. Test connection: `mysql -u root -p`
+    3. Check connection string in `appsettings.json`
+    4. Ensure database `TaskFlowDB` exists
+  </Accordion>
+
+  <Accordion title="Migration Error: Build failed">
+    **Possible causes:**
+    - Compilation errors in code
+    - Missing dependencies
+    
+    **Solutions:**
+    1. Run `dotnet build` to identify errors
+    2. Run `dotnet restore` to restore packages
+    3. Clean and rebuild: `dotnet clean && dotnet build`
+  </Accordion>
+
+  <Accordion title="Port Already in Use">
+    **Error:** `Address already in use`
+    
+    **Solutions:**
+    1. Change the port in `Properties/launchSettings.json`
+    2. Find and kill the process using the port:
+       - Windows: `netstat -ano | findstr :5000` then `taskkill /PID <pid> /F`
+       - Linux/Mac: `lsof -i :5000` then `kill -9 <pid>`
+  </Accordion>
+
+  <Accordion title="Swagger Not Loading">
+    **Possible causes:**
+    - Not running in Development mode
+    - Incorrect URL
+    
+    **Solutions:**
+    1. Ensure `ASPNETCORE_ENVIRONMENT=Development`
+    2. Access `http://localhost:5000/swagger` (not `/swagger/index.html`)
+    3. Check browser console for errors
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+    Learn the API basics with a hands-on tutorial
+  </Card>
+  <Card title="Authentication" icon="lock" href="/concepts/authentication">
+    Deep dive into JWT authentication and security
+  </Card>
+  <Card title="API Reference" icon="book" href="/api/auth/register">
+    Explore all endpoints and data models
+  </Card>
+  <Card title="Database Schema" icon="database" href="/configuration/database">
+    Understand the data model and relationships
+  </Card>
+</CardGroup>

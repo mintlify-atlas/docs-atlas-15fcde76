@@ -1,0 +1,61 @@
+---
+title: "Delete Column"
+api: "DELETE /api/column/{id}"
+description: "Delete a column from a board"
+---
+
+## Authentication
+
+This endpoint requires authentication and the user must have **Owner** or **Admin** role on the board. Members cannot delete columns.
+
+## Path Parameters
+
+<ParamField path="id" type="integer" required>
+  The ID of the column to delete
+</ParamField>
+
+## Response
+
+Returns `200 OK` with an empty response body on successful deletion.
+
+## Position Reindexing
+
+When a column is deleted, all columns with positions greater than the deleted column automatically shift left by 1 to maintain sequential ordering.
+
+**Example:** Deleting column at position 1
+- Before: [Col A(0), Col B(1), Col C(2), Col D(3)]
+- After: [Col A(0), Col C(1), Col D(2)]
+
+This ensures there are no gaps in the position sequence and maintains the visual order of columns.
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE https://api.taskflow.com/api/column/5 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+```json Response
+200 OK
+```
+</CodeGroup>
+
+## Error Responses
+
+<ResponseField name="404 Not Found">
+  Returned when the column with the specified ID doesn't exist
+</ResponseField>
+
+<ResponseField name="403 Forbidden">
+  Returned when the user doesn't have Owner or Admin role on the board
+</ResponseField>
+
+<ResponseField name="401 Unauthorized">
+  Returned when the authentication token is missing or invalid
+</ResponseField>
+
+## Important Notes
+
+- Deleting a column may affect tasks within that column. Ensure you handle task reassignment or deletion based on your application logic.
+- The position reindexing happens atomically with the deletion to maintain data consistency.

@@ -1,0 +1,81 @@
+---
+title: 'Create Task'
+api: 'POST /api/task'
+---
+
+Creates a new task in a specified column. The task will be positioned at the end of the column automatically.
+
+## Authentication
+
+Requires JWT Bearer token. User must be a member of the board containing the target column.
+
+## Request Body
+
+<ParamField body="columnId" type="integer" required>
+  The ID of the column where the task will be created
+</ParamField>
+
+<ParamField body="title" type="string" required>
+  The task title (max 150 characters)
+</ParamField>
+
+<ParamField body="description" type="string">
+  Optional task description
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="integer">
+  The unique identifier of the created task
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  The task title
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  The task description
+</ResponseField>
+
+<ResponseField name="position" type="integer">
+  The position of the task within the column (0-indexed)
+</ResponseField>
+
+<ResponseField name="columnId" type="integer">
+  The ID of the column containing the task
+</ResponseField>
+
+## How Positioning Works
+
+The controller automatically calculates the position by finding the highest position in the target column and adding 1 (see TaskController.cs:45-54). This ensures new tasks are always added at the end of the column.
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.taskflow.com/api/task \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "columnId": 1,
+    "title": "Implement user authentication",
+    "description": "Add JWT-based authentication to the API"
+  }'
+```
+
+```json Response
+{
+  "id": 42,
+  "title": "Implement user authentication",
+  "description": "Add JWT-based authentication to the API",
+  "position": 3,
+  "columnId": 1
+}
+```
+
+</CodeGroup>
+
+## Error Responses
+
+- **404 Not Found** - Column does not exist
+- **403 Forbidden** - User is not a member of the board
+- **401 Unauthorized** - Missing or invalid authentication token

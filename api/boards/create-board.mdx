@@ -1,0 +1,78 @@
+---
+title: "Create Board"
+api: "POST /api/board"
+description: "Create a new board and automatically become its owner"
+---
+
+## Authentication
+
+This endpoint requires a valid JWT Bearer token in the Authorization header.
+
+## Request Body
+
+<ParamField body="name" type="string" required>
+  The name of the board (max 100 characters)
+</ParamField>
+
+## Response
+
+Returns the created board with a generated join code.
+
+<ResponseField name="id" type="integer" required>
+  The unique identifier of the created board
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  The name of the board
+</ResponseField>
+
+<ResponseField name="joinCode" type="string" required>
+  The automatically generated 6-character join code for inviting others
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X POST https://api.taskflow.com/api/board \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Q1 Marketing Campaign"
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "id": 5,
+  "name": "Q1 Marketing Campaign",
+  "joinCode": "A3X9K2"
+}
+```
+
+## Error Responses
+
+<ResponseExample>
+```json 401 Unauthorized
+{
+  "message": "Unauthorized"
+}
+```
+
+```json 400 Bad Request
+{
+  "errors": {
+    "Name": [
+      "The Name field is required."
+    ]
+  }
+}
+```
+</ResponseExample>
+
+## Notes
+
+- The creator is automatically assigned the Owner role
+- A unique 6-character join code is generated automatically
+- The creator is automatically added as a board member with Owner permissions

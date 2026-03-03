@@ -1,0 +1,78 @@
+---
+title: Login
+description: Authenticate a user and receive a JWT token
+---
+
+## Endpoint
+
+<CodeGroup>
+```http
+POST /api/auth/login
+```
+</CodeGroup>
+
+Authenticates a user with email and password, returning a JWT token for subsequent API requests.
+
+## Request Body
+
+<ParamField body="email" type="string" required>
+  The user's email address
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  The user's password
+</ParamField>
+
+## Response
+
+<ResponseField name="token" type="string">
+  JWT token to use for authenticated requests. Include this token in the Authorization header as `Bearer <token>`.
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.taskflow.com/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "joel@test.com",
+    "password": "123456"
+  }'
+```
+
+```json Request
+{
+  "email": "joel@test.com",
+  "password": "123456"
+}
+```
+
+```json 200 Response
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+</CodeGroup>
+
+## Using the Token
+
+Include the token in the Authorization header for protected endpoints:
+
+```bash
+curl -X GET https://api.taskflow.com/api/board/my \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+## Error Responses
+
+<ResponseExample>
+```json 401 Unauthorized
+"Invalid credentials"
+```
+</ResponseExample>
+
+This error occurs when:
+- The email address doesn't exist in the system
+- The password is incorrect
+- The request fails validation (missing required fields, invalid email format)

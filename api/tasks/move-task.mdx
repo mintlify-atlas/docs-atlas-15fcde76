@@ -1,0 +1,101 @@
+---
+title: 'Move Task'
+api: 'PUT /api/task/{id}/move'
+---
+
+Moves a task to a new position within the same column or to a different column. This endpoint handles position adjustments automatically.
+
+## Authentication
+
+Requires JWT Bearer token. User must be a member of the board containing the task.
+
+## Path Parameters
+
+<ParamField path="id" type="integer" required>
+  The ID of the task to move
+</ParamField>
+
+## Request Body
+
+<ParamField body="newColumnId" type="integer" required>
+  The ID of the destination column (can be the same as the current column)
+</ParamField>
+
+<ParamField body="newPosition" type="integer" required>
+  The target position in the destination column (0-indexed)
+</ParamField>
+
+## Response
+
+Returns the complete updated TaskItem object with all fields including:
+
+<ResponseField name="id" type="integer">
+  The unique identifier of the task
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  The task title
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  The task description
+</ResponseField>
+
+<ResponseField name="position" type="integer">
+  The new position of the task
+</ResponseField>
+
+<ResponseField name="columnId" type="integer">
+  The new column ID
+</ResponseField>
+
+## How Position Adjustment Works
+
+The controller implements intelligent position management (TaskController.cs:72-112):
+
+1. **Tasks in the old column** positioned after the moved task have their positions decremented by 1
+2. **Tasks in the new column** at or after the target position have their positions incremented by 1
+3. The moved task is then placed at the exact target position
+
+This ensures no gaps in positioning and maintains proper task ordering across columns.
+
+### Example Scenario
+
+If column A has tasks at positions [0, 1, 2, 3] and you move task at position 1 to column B at position 0:
+- Column A tasks at positions 2 and 3 become positions 1 and 2
+- Column B tasks at position 0+ are shifted up by 1
+- The moved task is placed at position 0 in column B
+
+<CodeGroup>
+
+```bash cURL
+curl -X PUT https://api.taskflow.com/api/task/42/move \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "newColumnId": 2,
+    "newPosition": 0
+  }'
+```
+
+```json Response
+{
+  "id": 42,
+  "title": "Implement OAuth authentication",
+  "description": "Add OAuth 2.0 support in addition to JWT",
+  "columnId": 2,
+  "assignedTo": null,
+  "position": 0,
+  "dueDate": null,
+  "createdAt": "2024-01-15T10:30:00Z",
+  "isDeleted": false
+}
+```
+
+</CodeGroup>
+
+## Error Responses
+
+- **404 Not Found** - Task does not exist
+- **403 Forbidden** - User is not a member of the board
+- **401 Unauthorized** - Missing or invalid authentication token

@@ -1,0 +1,147 @@
+---
+title: Database Configuration
+description: Configure MySQL database connection and Entity Framework Core for TaskFlow API
+---
+
+TaskFlow uses **MySQL** as its database system and connects via **Entity Framework Core** with the Pomelo MySQL provider.
+
+## Connection String
+
+Define your MySQL connection string in `appsettings.json`:
+
+```json appsettings.json
+"ConnectionStrings": {
+  "DefaultConnection": "server=localhost;port=3306;database=TaskFlowDB;user=root;password=TU_PASSWORD;"
+}
+```
+
+### Connection String Parameters
+
+<ParamField path="server" type="string" required>
+  MySQL server address (e.g., `localhost` or IP address)
+</ParamField>
+
+<ParamField path="port" type="number" default="3306">
+  MySQL server port
+</ParamField>
+
+<ParamField path="database" type="string" required>
+  Name of the database to use (e.g., `TaskFlowDB`)
+</ParamField>
+
+<ParamField path="user" type="string" required>
+  MySQL username
+</ParamField>
+
+<ParamField path="password" type="string" required>
+  MySQL user password
+</ParamField>
+
+## DbContext Registration
+
+In `Program.cs`, the `AppDbContext` is registered with dependency injection:
+
+```csharp Program.cs
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
+    ));
+```
+
+This configuration:
+- Connects automatically to MySQL
+- Auto-detects the MySQL server version
+- Manages database migrations
+
+## AppDbContext
+
+The `AppDbContext` class defines all database entities and relationships:
+
+```csharp Data/AppDbContext.cs
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options)
+        : base(options)
+    {
+    }
+
+    public DbSet<User> Users { get; set; }
+    public DbSet<Board> Boards { get; set; }
+    public DbSet<BoardMember> BoardMembers { get; set; }
+    public DbSet<TaskColumn> Columns { get; set; }
+    public DbSet<TaskItem> Tasks { get; set; }
+}
+```
+
+### Database Tables
+
+- **Users** - Application users
+- **Boards** - Kanban boards
+- **BoardMembers** - Board membership with roles (composite key: UserId + BoardId)
+- **Columns** - Task columns within boards
+- **Tasks** - Individual tasks within columns
+
+### Entity Relationships
+
+The `OnModelCreating` method configures:
+- Composite keys (BoardMember)
+- Foreign key relationships
+- Cascade delete rules
+- One-to-many and many-to-many relationships
+
+## Database Migrations
+
+<Steps>
+  <Step title="Create a Migration">
+    Generate a new migration file based on your model changes:
+    
+    ```bash
+    Add-Migration InitialCreate
+    ```
+    
+    This creates a migration file in the `Migrations` folder with the necessary schema changes.
+  </Step>
+  
+  <Step title="Apply Migration to Database">
+    Execute the migration to update your MySQL database:
+    
+    ```bash
+    Update-Database
+    ```
+    
+    This applies all pending migrations and creates/updates tables automatically.
+  </Step>
+  
+  <Step title="Verify Database">
+    Connect to your MySQL database to verify the tables were created successfully:
+    
+    ```sql
+    USE TaskFlowDB;
+    SHOW TABLES;
+    ```
+  </Step>
+</Steps>
+
+## Connection Flow
+
+1. API application starts
+2. `AppDbContext` is registered with the connection string
+3. Entity Framework opens connections as needed
+4. LINQ queries are executed in your controllers
+5. EF Core translates LINQ to SQL and executes against MySQL
+6. Results are mapped back to your entity models
+
+<Note>
+  Entity Framework Core manages connection pooling automatically for optimal performance.
+</Note>
+
+## Database Schema
+
+Key relationships in the TaskFlow schema:
+
+- User → Boards (Owner, one-to-many)
+- User ↔ Boards (BoardMembers, many-to-many)
+- Board → Columns (one-to-many, cascade delete)
+- Column → Tasks (one-to-many, cascade delete)
+- Task → User (AssignedTo, optional, set null on delete)

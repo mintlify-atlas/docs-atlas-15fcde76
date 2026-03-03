@@ -1,0 +1,335 @@
+---
+title: Tasks & Columns
+description: Learn about the Column and Task models, the positioning system, and how drag-and-drop mechanics work in TaskFlow's Kanban board
+---
+
+TaskFlow implements a Kanban board system with columns and tasks. Each column contains tasks that can be reordered and moved between columns using a zero-based positioning system.
+
+## Column Model
+
+The `TaskColumn` model is defined in `Models/TaskColumn.cs`:
+
+| Property | Type | Required | Max Length | Description |
+|----------|------|----------|------------|-------------|
+| `Id` | `int` | Auto | - | Unique column identifier |
+| `Name` | `string` | Yes | 50 | Column display name |
+| `Position` | `int` | Auto | - | Zero-based position in the board |
+| `BoardId` | `int` | Yes | - | Parent board identifier |
+
+### Navigation Properties
+
+```csharp
+public Board Board { get; set; }
+public ICollection<TaskItem> Tasks { get; set; }
+```
+
+### Default Columns
+
+When a board is created (either through registration or manual creation), three default columns are automatically generated:
+
+```csharp
+// From AuthService.cs:68-73
+new TaskColumn { Name = "To Do", Position = 0, BoardId = board.Id },
+new TaskColumn { Name = "In Progress", Position = 1, BoardId = board.Id },
+new TaskColumn { Name = "Done", Position = 2, BoardId = board.Id }
+```
+
+<Info>
+Columns are displayed in the UI ordered by their `Position` value, from left to right.
+</Info>
+
+## Task Model
+
+The `TaskItem` model is defined in `Models/TaskItem.cs`:
+
+| Property | Type | Required | Max Length | Description |
+|----------|------|----------|------------|-------------|
+| `Id` | `int` | Auto | - | Unique task identifier |
+| `Title` | `string` | Yes | 150 | Task title |
+| `Description` | `string` | No | - | Detailed task description |
+| `ColumnId` | `int` | Yes | - | Parent column identifier |
+| `AssignedTo` | `int?` | No | - | User ID of assigned user (nullable) |
+| `Position` | `int` | Auto | - | Zero-based position within the column |
+| `DueDate` | `DateTime?` | No | - | Optional due date |
+| `CreatedAt` | `DateTime` | Auto | - | UTC timestamp of creation |
+| `IsDeleted` | `bool` | Auto | - | Soft delete flag (default: `false`) |
+
+### Navigation Properties
+
+```csharp
+public TaskColumn Column { get; set; }
+public User AssignedUser { get; set; }
+```
+
+### Task Assignment
+
+Tasks can optionally be assigned to a user:
+
+- `AssignedTo` is **nullable** - tasks can exist without being assigned
+- When assigned, the value is the `UserId` of the assigned user
+- The `AssignedUser` navigation property provides access to user details
+
+<Note>
+The assigned user must be a member of the board that contains the task.
+</Note>
+
+## Positioning System
+
+Both columns and tasks use a **zero-based integer positioning system** to maintain order.
+
+### How Positioning Works
+
+- Positions start at `0` (first item)
+- Each subsequent item increments by `1`
+- Items are displayed ordered by their `Position` value (ascending)
+
+**Example column positions:**
+
+```
+To Do        → Position: 0
+In Progress  → Position: 1
+In Review    → Position: 2
+Done         → Position: 3
+```
+
+**Example task positions within a column:**
+
+```
+Column "To Do":
+  ├─ Fix login bug      → Position: 0
+  ├─ Add new feature    → Position: 1
+  └─ Update docs        → Position: 2
+```
+
+### Automatic Position Assignment
+
+When creating a new column or task, the position is automatically assigned to the end:
+
+<CodeGroup>
+
+```json Create Column
+POST /api/column
+{
+  "name": "In Review",
+  "boardId": 1
+  // Position is auto-assigned to the last position + 1
+}
+```
+
+```json Create Task
+POST /api/task
+{
+  "title": "New task",
+  "description": "Task details",
+  "columnId": 1
+  // Position is auto-assigned within the column
+}
+```
+
+</CodeGroup>
+
+## Drag-and-Drop Mechanics
+
+TaskFlow supports drag-and-drop for both columns (horizontal) and tasks (vertical and between columns).
+
+### Moving Columns (Horizontal Drag)
+
+Reorder columns by changing their position:
+
+```json
+PUT /api/column/{id}/move
+{
+  "newPosition": 1
+}
+```
+
+**What happens:**
+1. Column is moved to the new position
+2. Other columns are automatically reindexed
+3. Positions are compacted (no gaps)
+
+**Example:**
+
+```
+Before:
+0: To Do
+1: In Progress
+2: Done
+
+Move "Done" to position 1:
+
+After:
+0: To Do
+1: Done
+2: In Progress
+```
+
+### Moving Tasks (Vertical or Between Columns)
+
+Move tasks within the same column or to a different column:
+
+```json
+PUT /api/task/{id}/move
+{
+  "columnId": 2,
+  "newPosition": 0
+}
+```
+
+**What happens:**
+1. Task is moved to the specified column
+2. Task is inserted at the specified position
+3. Positions in both source and target columns are reindexed
+4. Automatic compaction prevents duplicate positions
+
+<Info>
+The move endpoint handles both scenarios:
+- **Same column**: Reorder tasks vertically
+- **Different column**: Move task between columns with new position
+</Info>
+
+### Position Compaction
+
+The system automatically maintains position integrity:
+
+- **No gaps**: Positions are sequential (0, 1, 2, 3...)
+- **No duplicates**: Each item has a unique position within its scope
+- **Automatic reordering**: When items are moved or deleted, positions are recalculated
+
+**Example of compaction after deletion:**
+
+```
+Before deletion:
+0: Task A
+1: Task B  ← deleted
+2: Task C
+3: Task D
+
+After deletion:
+0: Task A
+1: Task C  ← repositioned
+2: Task D  ← repositioned
+```
+
+## Column Operations
+
+### Create a Column
+
+```json
+POST /api/column
+Authorization: Bearer {token}
+{
+  "name": "In Review",
+  "boardId": 1
+}
+```
+
+<Warning>
+Requires **Owner** or **Admin** role. Members cannot create columns.
+</Warning>
+
+### Update Column Name
+
+```json
+PUT /api/column/{id}
+Authorization: Bearer {token}
+{
+  "name": "Code Review"
+}
+```
+
+### Delete a Column
+
+```http
+DELETE /api/column/{id}
+Authorization: Bearer {token}
+```
+
+Positions of remaining columns are automatically reindexed.
+
+## Task Operations
+
+### Create a Task
+
+```json
+POST /api/task
+Authorization: Bearer {token}
+{
+  "title": "Implement feature X",
+  "description": "Detailed description",
+  "columnId": 1,
+  "assignedTo": 5,
+  "dueDate": "2026-03-15T00:00:00Z"
+}
+```
+
+All roles (Owner, Admin, Member) can create tasks.
+
+### Update a Task
+
+```json
+PUT /api/task/{id}
+Authorization: Bearer {token}
+{
+  "title": "Updated title",
+  "description": "Updated description"
+}
+```
+
+### Delete a Task
+
+```http
+DELETE /api/task/{id}
+Authorization: Bearer {token}
+```
+
+Tasks are soft-deleted (`IsDeleted = true`) and positions are reindexed.
+
+## Retrieving Board Data
+
+When fetching a board, columns and tasks are automatically ordered:
+
+```http
+GET /api/board/{id}
+Authorization: Bearer {token}
+```
+
+**Response structure:**
+
+```json
+{
+  "id": 1,
+  "name": "Project Alpha",
+  "columns": [
+    {
+      "id": 1,
+      "name": "To Do",
+      "position": 0,
+      "tasks": [
+        {
+          "id": 1,
+          "title": "Task 1",
+          "position": 0,
+          ...
+        },
+        {
+          "id": 2,
+          "title": "Task 2",
+          "position": 1,
+          ...
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "In Progress",
+      "position": 1,
+      "tasks": [...]
+    }
+  ]
+}
+```
+
+<Note>
+Columns are ordered by `Position` (ascending), and tasks within each column are also ordered by `Position` (ascending).
+</Note>

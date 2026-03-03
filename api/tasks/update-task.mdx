@@ -1,0 +1,78 @@
+---
+title: 'Update Task'
+api: 'PUT /api/task/{id}'
+---
+
+Updates the title and description of an existing task. This endpoint does not change the task's position or column.
+
+## Authentication
+
+Requires JWT Bearer token. User must be a member of the board containing the task.
+
+## Path Parameters
+
+<ParamField path="id" type="integer" required>
+  The ID of the task to update
+</ParamField>
+
+## Request Body
+
+<ParamField body="title" type="string" required>
+  The updated task title (max 150 characters)
+</ParamField>
+
+<ParamField body="description" type="string">
+  The updated task description
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="integer">
+  The unique identifier of the task
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  The updated task title
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  The updated task description
+</ResponseField>
+
+<ResponseField name="position" type="integer">
+  The position of the task within the column (unchanged)
+</ResponseField>
+
+<ResponseField name="columnId" type="integer">
+  The ID of the column containing the task (unchanged)
+</ResponseField>
+
+<CodeGroup>
+
+```bash cURL
+curl -X PUT https://api.taskflow.com/api/task/42 \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Implement OAuth authentication",
+    "description": "Add OAuth 2.0 support in addition to JWT"
+  }'
+```
+
+```json Response
+{
+  "id": 42,
+  "title": "Implement OAuth authentication",
+  "description": "Add OAuth 2.0 support in addition to JWT",
+  "position": 3,
+  "columnId": 1
+}
+```
+
+</CodeGroup>
+
+## Error Responses
+
+- **404 Not Found** - Task does not exist
+- **403 Forbidden** - User is not a member of the board
+- **401 Unauthorized** - Missing or invalid authentication token

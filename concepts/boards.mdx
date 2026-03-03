@@ -1,0 +1,137 @@
+---
+title: Boards
+description: Understanding the Board model, ownership, join codes, and how multi-user collaboration works in TaskFlow
+---
+
+Boards are the core organizational unit in TaskFlow. Each board represents a Kanban workspace that can contain multiple columns and tasks, with support for multi-user collaboration.
+
+## Board Model
+
+The `Board` model is defined in `Models/Board.cs` with the following properties:
+
+| Property | Type | Required | Max Length | Description |
+|----------|------|----------|------------|-------------|
+| `Id` | `int` | Auto | - | Unique board identifier |
+| `Name` | `string` | Yes | 100 | Board display name |
+| `JoinCode` | `string` | Yes | 10 | Unique code for joining the board |
+| `OwnerId` | `int` | Yes | - | User ID of the board owner |
+| `CreatedAt` | `DateTime` | Auto | - | UTC timestamp of creation |
+| `IsDeleted` | `bool` | Auto | - | Soft delete flag (default: `false`) |
+
+### Navigation Properties
+
+The Board model includes relationships to other entities:
+
+```csharp
+public User Owner { get; set; }
+public ICollection<BoardMember> BoardMembers { get; set; }
+public ICollection<TaskColumn> Columns { get; set; }
+```
+
+## Board Ownership
+
+Every board has a single **Owner** who is assigned when the board is created.
+
+<Info>
+When a user registers, a personal board is automatically created with:
+- Name: `"{username}'s Board"`
+- Owner: The new user
+- Default columns: "To Do", "In Progress", "Done"
+</Info>
+
+The Owner has full control over the board, including the exclusive ability to delete it.
+
+## Join Codes
+
+Each board has a unique `JoinCode` that allows other users to join as members.
+
+### Join Code Format
+
+- **Length**: 6 characters
+- **Characters**: Uppercase letters (A-Z) and digits (0-9)
+- **Example**: `ABC123`, `XYZ789`
+
+Join codes are automatically generated when a board is created using a random alphanumeric string:
+
+```csharp
+// From AuthService.cs:89-95
+const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+var random = new Random();
+return new string(Enumerable.Repeat(chars, 6)
+    .Select(s => s[random.Next(s.Length)]).ToArray());
+```
+
+### Joining a Board
+
+Users can join a board using the join code:
+
+```json
+POST /api/board/join
+{
+  "joinCode": "ABC123"
+}
+```
+
+When a user joins via join code, they are added to the board with the **Member** role by default.
+
+## Board Members
+
+A board can have multiple members, each with a specific role. Members are tracked in the `BoardMembers` table:
+
+- **User-Board Relationship**: Many-to-many (a user can be a member of multiple boards)
+- **Role Assignment**: Each membership has an associated `BoardRole` (Owner, Admin, or Member)
+- **Access Control**: Operations are validated based on the user's role in that specific board
+
+<Note>
+The board owner is also listed as a member in the `BoardMembers` table with the `Owner` role.
+</Note>
+
+## Board Operations
+
+### Get My Boards
+
+Retrieve all boards where the authenticated user is a member:
+
+```http
+GET /api/board/my
+Authorization: Bearer {token}
+```
+
+### Get Board Details
+
+Get a complete board with all columns and tasks:
+
+```http
+GET /api/board/{id}
+Authorization: Bearer {token}
+```
+
+**Response includes:**
+- Board information
+- Columns ordered by `Position`
+- Tasks within each column ordered by `Position`
+
+### Create a New Board
+
+Create a new board (user becomes the Owner):
+
+```json
+POST /api/board
+Authorization: Bearer {token}
+{
+  "name": "Project Alpha"
+}
+```
+
+## Soft Deletion
+
+Boards are soft-deleted using the `IsDeleted` flag rather than being permanently removed from the database.
+
+<Warning>
+Only the board **Owner** can delete a board. Admins and Members do not have this permission.
+</Warning>
+
+When a board is deleted:
+- `IsDeleted` is set to `true`
+- The board is hidden from user queries
+- Related data (columns, tasks) is preserved in the database

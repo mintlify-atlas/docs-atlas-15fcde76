@@ -1,0 +1,59 @@
+---
+title: "List My Boards"
+api: "GET /api/board/my"
+description: "Retrieve all boards the authenticated user is a member of"
+---
+
+## Authentication
+
+This endpoint requires a valid JWT Bearer token in the Authorization header.
+
+## Response
+
+Returns an array of boards where the authenticated user is a member.
+
+<ResponseField name="id" type="integer" required>
+  The unique identifier of the board
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  The name of the board
+</ResponseField>
+
+<ResponseField name="joinCode" type="string" required>
+  The unique join code for inviting others to the board
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET https://api.taskflow.com/api/board/my \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+## Example Response
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Marketing Campaign Board",
+    "joinCode": "ABC123"
+  },
+  {
+    "id": 2,
+    "name": "Product Development",
+    "joinCode": "XYZ789"
+  }
+]
+```
+
+## Error Responses
+
+<ResponseExample>
+```json 401 Unauthorized
+{
+  "message": "Unauthorized"
+}
+```
+</ResponseExample>

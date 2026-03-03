@@ -1,0 +1,137 @@
+---
+title: "Get Board Details"
+api: "GET /api/board/{id}"
+description: "Retrieve detailed information about a specific board including columns and tasks"
+---
+
+## Authentication
+
+This endpoint requires a valid JWT Bearer token in the Authorization header. The user must be a member of the board to access it.
+
+## Path Parameters
+
+<ParamField path="id" type="integer" required>
+  The unique identifier of the board
+</ParamField>
+
+## Response
+
+Returns detailed board information including all columns and tasks.
+
+<ResponseField name="id" type="integer" required>
+  The unique identifier of the board
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  The name of the board
+</ResponseField>
+
+<ResponseField name="joinCode" type="string" required>
+  The unique join code for inviting others to the board
+</ResponseField>
+
+<ResponseField name="columns" type="array" required>
+  Array of columns in the board, ordered by position
+  
+  <Expandable title="Column Properties">
+    <ResponseField name="id" type="integer" required>
+      The unique identifier of the column
+    </ResponseField>
+    
+    <ResponseField name="name" type="string" required>
+      The name of the column
+    </ResponseField>
+    
+    <ResponseField name="position" type="integer" required>
+      The position of the column in the board
+    </ResponseField>
+    
+    <ResponseField name="tasks" type="array" required>
+      Array of tasks in the column, ordered by position
+      
+      <Expandable title="Task Properties">
+        <ResponseField name="id" type="integer" required>
+          The unique identifier of the task
+        </ResponseField>
+        
+        <ResponseField name="title" type="string" required>
+          The title of the task
+        </ResponseField>
+        
+        <ResponseField name="description" type="string">
+          The description of the task
+        </ResponseField>
+        
+        <ResponseField name="position" type="integer" required>
+          The position of the task in the column
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET https://api.taskflow.com/api/board/1 \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+## Example Response
+
+```json
+{
+  "id": 1,
+  "name": "Marketing Campaign Board",
+  "joinCode": "ABC123",
+  "columns": [
+    {
+      "id": 1,
+      "name": "To Do",
+      "position": 0,
+      "tasks": [
+        {
+          "id": 1,
+          "title": "Create social media posts",
+          "description": "Design and schedule posts for next week",
+          "position": 0
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "In Progress",
+      "position": 1,
+      "tasks": []
+    }
+  ]
+}
+```
+
+## Error Responses
+
+<ResponseExample>
+```json 401 Unauthorized
+{
+  "message": "Unauthorized"
+}
+```
+
+```json 403 Forbidden
+{
+  "message": "Forbidden"
+}
+```
+
+```json 404 Not Found
+{
+  "message": "Not Found"
+}
+```
+</ResponseExample>
+
+## Notes
+
+- Only board members can access board details
+- Columns and tasks are returned in their specified position order
+- Non-members will receive a 403 Forbidden response

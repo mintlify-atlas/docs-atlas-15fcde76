@@ -1,0 +1,77 @@
+---
+title: Register User
+description: Create a new user account with automatic board setup
+---
+
+## Endpoint
+
+<CodeGroup>
+```http
+POST /api/auth/register
+```
+</CodeGroup>
+
+Creates a new user account and automatically:
+- Creates a personal board for the user
+- Assigns the user as Owner of the board
+- Creates default columns (To Do, In Progress, Done)
+
+## Request Body
+
+<ParamField body="username" type="string" required>
+  Username for the new account. Maximum 50 characters.
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  Valid email address. Maximum 100 characters. Must be unique.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  Password for the account. Minimum 6 characters.
+</ParamField>
+
+## Response
+
+<ResponseField name="message" type="string">
+  Success message confirming user registration
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.taskflow.com/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "Joel",
+    "email": "joel@test.com",
+    "password": "123456"
+  }'
+```
+
+```json Request
+{
+  "username": "Joel",
+  "email": "joel@test.com",
+  "password": "123456"
+}
+```
+
+```json 200 Response
+{
+  "message": "User registered successfully"
+}
+```
+</CodeGroup>
+
+## Error Responses
+
+<ResponseExample>
+```json 400 Bad Request
+"Email already exists"
+```
+</ResponseExample>
+
+This error occurs when:
+- The email address is already registered in the system
+- The request fails validation (missing required fields, invalid email format, password too short)

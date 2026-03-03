@@ -1,0 +1,102 @@
+---
+title: Introduction
+description: TaskFlow is a powerful Kanban-style task management API built with ASP.NET Core (.NET 8), featuring JWT authentication, role-based permissions, and real-time collaboration.
+---
+
+## Welcome to TaskFlow API
+
+TaskFlow is a comprehensive RESTful API for building Trello-style task management applications. Built with modern ASP.NET Core technology, it provides everything you need to create collaborative Kanban boards with sophisticated permission management.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get up and running in 5 minutes with our quickstart guide
+  </Card>
+  <Card title="Installation" icon="download" href="/installation">
+    Set up the development environment and configure the database
+  </Card>
+  <Card title="Authentication" icon="lock" href="/concepts/authentication">
+    Learn about JWT-based authentication and authorization
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/auth/register">
+    Explore all available endpoints and data models
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="JWT Authentication" icon="shield-check">
+    Secure token-based authentication with configurable expiration and role-based access control
+  </Card>
+  <Card title="Multi-User Boards" icon="users">
+    Create boards with Owner, Admin, and Member roles. Share boards using unique join codes
+  </Card>
+  <Card title="Kanban Workflow" icon="columns">
+    Organize tasks in customizable columns with drag-and-drop position management
+  </Card>
+  <Card title="Entity Framework Core" icon="database">
+    Built on EF Core with MySQL support, automatic migrations, and optimized queries
+  </Card>
+  <Card title="Task Management" icon="list-check">
+    Create, assign, move, and track tasks with descriptions, due dates, and positions
+  </Card>
+  <Card title="Role-Based Permissions" icon="user-shield">
+    Granular permissions control what each user can do based on their board role
+  </Card>
+</CardGroup>
+
+## Technology Stack
+
+TaskFlow is built with modern, production-ready technologies:
+
+- **ASP.NET Core 8** - High-performance web framework
+- **Entity Framework Core** - Object-relational mapper with LINQ support
+- **MySQL** - Reliable relational database with Pomelo provider
+- **JWT Authentication** - Industry-standard token-based auth
+- **Swagger/OpenAPI** - Interactive API documentation
+
+## How It Works
+
+<Steps>
+  <Step title="Register & Authenticate">
+    Users register with email and password. On registration, a personal board is automatically created with default columns (To Do, In Progress, Done). Login returns a JWT token for subsequent requests.
+  </Step>
+  
+  <Step title="Create & Share Boards">
+    Create multiple boards for different projects. Each board gets a unique join code that others can use to join as members. The creator becomes the Owner with full control.
+  </Step>
+  
+  <Step title="Organize with Columns">
+    Add custom columns to organize your workflow. Owners and Admins can create, rename, reorder, and delete columns. Position management is handled automatically.
+  </Step>
+  
+  <Step title="Manage Tasks">
+    All board members can create tasks, add descriptions, set due dates, and move tasks between columns. Tasks maintain their position and can be assigned to specific users.
+  </Step>
+</Steps>
+
+## Role-Based Permissions
+
+TaskFlow implements a three-tier permission system:
+
+| Action | Owner | Admin | Member |
+| --- | --- | --- | --- |
+| Create/Delete Board | ✓ | ✗ | ✗ |
+| Create/Delete Column | ✓ | ✓ | ✗ |
+| Create/Move Tasks | ✓ | ✓ | ✓ |
+| View Board | ✓ | ✓ | ✓ |
+
+<Note>
+  Permissions are validated on every request. Only board members can access board data, ensuring complete isolation between boards.
+</Note>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Get Started Now" icon="play" href="/quickstart">
+    Follow our quickstart guide to register a user, create a board, and add your first task
+  </Card>
+  <Card title="Setup Development Environment" icon="wrench" href="/installation">
+    Install prerequisites and configure your local development environment
+  </Card>
+</CardGroup>

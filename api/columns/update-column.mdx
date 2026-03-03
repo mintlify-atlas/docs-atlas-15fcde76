@@ -1,0 +1,75 @@
+---
+title: "Update Column"
+api: "PUT /api/column/{id}"
+description: "Update the name of an existing column"
+---
+
+## Authentication
+
+This endpoint requires authentication and the user must have **Owner** or **Admin** role on the board. Members cannot update columns.
+
+## Path Parameters
+
+<ParamField path="id" type="integer" required>
+  The ID of the column to update
+</ParamField>
+
+## Request Body
+
+<ParamField body="Name" type="string" required>
+  The new name for the column (maximum 50 characters)
+</ParamField>
+
+## Response
+
+<ResponseField name="Id" type="integer">
+  The unique identifier of the updated column
+</ResponseField>
+
+<ResponseField name="Name" type="string">
+  The updated name of the column
+</ResponseField>
+
+<ResponseField name="Position" type="integer">
+  The current position of the column in the board
+</ResponseField>
+
+<ResponseField name="BoardId" type="integer">
+  The ID of the board this column belongs to
+</ResponseField>
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl -X PUT https://api.taskflow.com/api/column/5 \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Name": "In Review"
+  }'
+```
+
+```json Response
+{
+  "Id": 5,
+  "Name": "In Review",
+  "Position": 2,
+  "BoardId": 1
+}
+```
+</CodeGroup>
+
+## Error Responses
+
+<ResponseField name="404 Not Found">
+  Returned when the column with the specified ID doesn't exist
+</ResponseField>
+
+<ResponseField name="403 Forbidden">
+  Returned when the user doesn't have Owner or Admin role on the board
+</ResponseField>
+
+<ResponseField name="401 Unauthorized">
+  Returned when the authentication token is missing or invalid
+</ResponseField>

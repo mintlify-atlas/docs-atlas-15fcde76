@@ -1,0 +1,100 @@
+---
+title: "Move Column"
+api: "PUT /api/column/{id}/move"
+description: "Reorder a column by changing its position"
+---
+
+## Authentication
+
+This endpoint requires authentication and the user must have **Owner** or **Admin** role on the board. Members cannot reorder columns.
+
+## Path Parameters
+
+<ParamField path="id" type="integer" required>
+  The ID of the column to move
+</ParamField>
+
+## Request Body
+
+<ParamField body="NewPosition" type="integer" required>
+  The target position for the column (0-indexed)
+</ParamField>
+
+## Response
+
+<ResponseField name="Id" type="integer">
+  The unique identifier of the moved column
+</ResponseField>
+
+<ResponseField name="Name" type="string">
+  The name of the column
+</ResponseField>
+
+<ResponseField name="Position" type="integer">
+  The new position of the column
+</ResponseField>
+
+<ResponseField name="BoardId" type="integer">
+  The ID of the board this column belongs to
+</ResponseField>
+
+## Positioning System
+
+The move operation uses an intelligent reindexing system:
+
+### Moving Forward (Right)
+When moving a column to a higher position (e.g., from position 1 to 3):
+- All columns between the old and new positions shift left by 1
+- The moved column takes the new position
+
+**Example:** Moving column at position 1 to position 3
+- Before: [Col A(0), Col B(1), Col C(2), Col D(3)]
+- After: [Col A(0), Col C(1), Col D(2), Col B(3)]
+
+### Moving Backward (Left)
+When moving a column to a lower position (e.g., from position 3 to 1):
+- All columns between the new and old positions shift right by 1
+- The moved column takes the new position
+
+**Example:** Moving column at position 3 to position 1
+- Before: [Col A(0), Col B(1), Col C(2), Col D(3)]
+- After: [Col A(0), Col D(1), Col B(2), Col C(3)]
+
+### No Change
+If the old and new positions are the same, no reordering occurs and the column is returned unchanged.
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl -X PUT https://api.taskflow.com/api/column/5/move \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "NewPosition": 0
+  }'
+```
+
+```json Response
+{
+  "Id": 5,
+  "Name": "In Progress",
+  "Position": 0,
+  "BoardId": 1
+}
+```
+</CodeGroup>
+
+## Error Responses
+
+<ResponseField name="404 Not Found">
+  Returned when the column with the specified ID doesn't exist
+</ResponseField>
+
+<ResponseField name="403 Forbidden">
+  Returned when the user doesn't have Owner or Admin role on the board
+</ResponseField>
+
+<ResponseField name="401 Unauthorized">
+  Returned when the authentication token is missing or invalid
+</ResponseField>

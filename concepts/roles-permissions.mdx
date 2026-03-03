@@ -1,0 +1,195 @@
+---
+title: Roles & Permissions
+description: Understanding the BoardRole system and permission levels for Owners, Admins, and Members in TaskFlow
+---
+
+TaskFlow implements a role-based permission system where each user has a specific role for each board they belong to. Roles determine what actions users can perform.
+
+## BoardRole Enum
+
+The `BoardRole` enum is defined in `Models/BoardRole.cs` with three distinct levels:
+
+```csharp
+public enum BoardRole
+{
+    Owner = 0,
+    Admin = 1,
+    Member = 2
+}
+```
+
+| Role | Value | Description |
+|------|-------|-------------|
+| `Owner` | 0 | Full control over the board, including deletion rights |
+| `Admin` | 1 | Can manage columns and tasks, but cannot delete the board |
+| `Member` | 2 | Can create and move tasks, but cannot manage columns |
+
+<Note>
+Roles are assigned per board - a user can be an Owner of one board, an Admin of another, and a Member of a third.
+</Note>
+
+## Permission Matrix
+
+The following table shows what each role can do:
+
+| Action | Owner | Admin | Member |
+|--------|-------|-------|--------|
+| Create column | ✔ | ✔ | ✖ |
+| Delete column | ✔ | ✔ | ✖ |
+| Move column | ✔ | ✔ | ✖ |
+| Rename column | ✔ | ✔ | ✖ |
+| Create task | ✔ | ✔ | ✔ |
+| Edit task | ✔ | ✔ | ✔ |
+| Move task | ✔ | ✔ | ✔ |
+| Delete task | ✔ | ✔ | ✔ |
+| Delete board | ✔ | ✖ | ✖ |
+| View board | ✔ | ✔ | ✔ |
+
+## Role Assignment
+
+### Automatic Assignment
+
+Roles are automatically assigned in certain scenarios:
+
+<Tabs>
+  <Tab title="Board Creation">
+    When a user creates a board, they automatically become the **Owner**:
+    
+    ```json
+    POST /api/board
+    {
+      "name": "My Project"
+    }
+    ```
+    
+    Result: User is added to `BoardMembers` with `Role = BoardRole.Owner`
+  </Tab>
+  
+  <Tab title="User Registration">
+    When a new user registers, a personal board is created and they become the **Owner**:
+    
+    ```csharp
+    // From AuthService.cs:58-63
+    var boardMember = new BoardMember
+    {
+        UserId = user.Id,
+        BoardId = board.Id,
+        Role = BoardRole.Owner,
+    };
+    ```
+  </Tab>
+  
+  <Tab title="Join via Code">
+    When a user joins a board using a join code, they are assigned the **Member** role by default:
+    
+    ```json
+    POST /api/board/join
+    {
+      "joinCode": "ABC123"
+    }
+    ```
+    
+    Result: User is added with `Role = BoardRole.Member`
+  </Tab>
+</Tabs>
+
+### Manual Role Changes
+
+<Info>
+Owners and Admins can promote Members to Admin or demote Admins to Member. Only one Owner exists per board and ownership cannot be transferred through the API.
+</Info>
+
+## Column Management Permissions
+
+Only **Owner** and **Admin** roles can manage columns:
+
+### Creating Columns
+
+```json
+POST /api/column
+Authorization: Bearer {token}
+{
+  "name": "In Review",
+  "boardId": 1
+}
+```
+
+<Warning>
+If a Member attempts to create a column, they will receive a `403 Forbidden` response.
+</Warning>
+
+### Deleting Columns
+
+```http
+DELETE /api/column/{id}
+Authorization: Bearer {token}
+```
+
+When a column is deleted:
+- The column is removed
+- Remaining columns have their positions automatically reindexed
+- Tasks in the deleted column are handled according to cascade rules
+
+### Moving Columns
+
+```json
+PUT /api/column/{id}/move
+Authorization: Bearer {token}
+{
+  "newPosition": 1
+}
+```
+
+This allows drag-and-drop reordering of columns (horizontal movement in the Kanban view).
+
+## Task Management Permissions
+
+All roles (**Owner**, **Admin**, and **Member**) can manage tasks:
+
+### Creating Tasks
+
+```json
+POST /api/task
+Authorization: Bearer {token}
+{
+  "title": "Implement login",
+  "description": "Add JWT authentication",
+  "columnId": 1
+}
+```
+
+### Moving Tasks
+
+```json
+PUT /api/task/{id}/move
+Authorization: Bearer {token}
+{
+  "columnId": 2,
+  "newPosition": 0
+}
+```
+
+This enables drag-and-drop between columns with automatic position management.
+
+## Board Deletion Permission
+
+Only the **Owner** can delete a board:
+
+```http
+DELETE /api/board/{id}
+Authorization: Bearer {token}
+```
+
+<Warning>
+Admins and Members cannot delete boards, even if they have full access to all other board features.
+</Warning>
+
+## Security Validation
+
+Every API operation validates:
+
+1. **Authentication**: User must have a valid JWT token
+2. **Board Membership**: User must be a member of the board
+3. **Role Permission**: User's role must have permission for the action
+
+If any validation fails, the API returns an appropriate error response.

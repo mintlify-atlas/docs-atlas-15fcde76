@@ -1,0 +1,78 @@
+---
+title: "Create Column"
+api: "POST /api/column"
+description: "Create a new column in a board"
+---
+
+## Authentication
+
+This endpoint requires authentication and the user must have **Owner** or **Admin** role on the board. Members cannot create columns.
+
+## Request Body
+
+<ParamField body="BoardId" type="integer" required>
+  The ID of the board where the column will be created
+</ParamField>
+
+<ParamField body="Name" type="string" required>
+  The name of the column (maximum 50 characters)
+</ParamField>
+
+<ParamField body="Position" type="integer">
+  The position of the column (automatically set to last position if not provided)
+</ParamField>
+
+## Response
+
+<ResponseField name="Id" type="integer">
+  The unique identifier of the created column
+</ResponseField>
+
+<ResponseField name="Name" type="string">
+  The name of the column
+</ResponseField>
+
+<ResponseField name="Position" type="integer">
+  The position of the column in the board (0-indexed)
+</ResponseField>
+
+<ResponseField name="BoardId" type="integer">
+  The ID of the board this column belongs to
+</ResponseField>
+
+## Positioning System
+
+When creating a column, the system automatically assigns it to the last position in the board. The position is calculated as the maximum existing position + 1, starting from 0 if no columns exist.
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.taskflow.com/api/column \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "BoardId": 1,
+    "Name": "In Progress"
+  }'
+```
+
+```json Response
+{
+  "Id": 5,
+  "Name": "In Progress",
+  "Position": 2,
+  "BoardId": 1
+}
+```
+</CodeGroup>
+
+## Error Responses
+
+<ResponseField name="403 Forbidden">
+  Returned when the user doesn't have Owner or Admin role on the board
+</ResponseField>
+
+<ResponseField name="401 Unauthorized">
+  Returned when the authentication token is missing or invalid
+</ResponseField>

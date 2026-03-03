@@ -1,0 +1,86 @@
+---
+title: "Update Board"
+api: "PUT /api/board/{id}"
+description: "Update board details (Owner only)"
+---
+
+## Authentication
+
+This endpoint requires a valid JWT Bearer token in the Authorization header. Only users with the **Owner** role can update the board.
+
+## Path Parameters
+
+<ParamField path="id" type="integer" required>
+  The unique identifier of the board to update
+</ParamField>
+
+## Request Body
+
+<ParamField body="name" type="string" required>
+  The new name for the board
+</ParamField>
+
+## Response
+
+Returns the updated board information.
+
+<ResponseField name="id" type="integer" required>
+  The unique identifier of the board
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  The updated name of the board
+</ResponseField>
+
+<ResponseField name="joinCode" type="string" required>
+  The board's join code (unchanged)
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X PUT https://api.taskflow.com/api/board/1 \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Q2 Marketing Campaign"
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "id": 1,
+  "name": "Q2 Marketing Campaign",
+  "joinCode": "ABC123"
+}
+```
+
+## Error Responses
+
+<ResponseExample>
+```json 401 Unauthorized
+{
+  "message": "Unauthorized"
+}
+```
+
+```json 403 Forbidden
+{
+  "message": "Forbidden"
+}
+```
+
+```json 404 Not Found
+{
+  "message": "Not Found"
+}
+```
+</ResponseExample>
+
+## Notes
+
+- Only board owners can update board details
+- Members or non-members will receive a 403 Forbidden response
+- The join code cannot be changed through this endpoint

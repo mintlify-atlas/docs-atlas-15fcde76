@@ -1,0 +1,165 @@
+---
+title: JWT Authentication
+description: Configure JSON Web Token authentication for secure API access in TaskFlow
+---
+
+TaskFlow uses **JWT (JSON Web Token)** for stateless authentication. All protected endpoints require a valid Bearer token.
+
+## JWT Configuration
+
+Define your JWT settings in `appsettings.json`:
+
+```json appsettings.json
+"JwtSettings": {
+  "Key": "CLAVE_SECRETA",
+  "Issuer": "TaskFlowAPI",
+  "Audience": "TaskFlowClient",
+  "ExpiresInMinutes": 60
+}
+```
+
+### Configuration Parameters
+
+<ParamField path="Key" type="string" required>
+  Secret key used to sign and validate tokens. **Must be kept secure and never committed to source control.**
+  
+  <Warning>Use a strong, randomly generated key in production (minimum 256 bits recommended).</Warning>
+</ParamField>
+
+<ParamField path="Issuer" type="string" required>
+  The issuer of the token, typically your API name (e.g., `TaskFlowAPI`)
+</ParamField>
+
+<ParamField path="Audience" type="string" required>
+  The intended audience/recipient of the token (e.g., `TaskFlowClient`)
+</ParamField>
+
+<ParamField path="ExpiresInMinutes" type="number" default="60">
+  Token expiration time in minutes. Default is 60 minutes (1 hour).
+</ParamField>
+
+## JWT Authentication Setup
+
+In `Program.cs`, JWT authentication is configured:
+
+```csharp Program.cs
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(key)
+    };
+});
+```
+
+### Validation Parameters
+
+- **ValidateIssuer** - Ensures the token was issued by TaskFlowAPI
+- **ValidateAudience** - Verifies the token is intended for TaskFlowClient
+- **ValidateLifetime** - Checks token hasn't expired
+- **ValidateIssuerSigningKey** - Validates the token signature using the secret key
+
+## Token Claims
+
+Each JWT token includes the following claims about the authenticated user:
+
+<ResponseField name="NameIdentifier" type="string">
+  The unique user ID from the database
+</ResponseField>
+
+<ResponseField name="Email" type="string">
+  User's email address
+</ResponseField>
+
+<ResponseField name="Username" type="string">
+  User's username
+</ResponseField>
+
+## Using JWT Tokens
+
+### Login and Receive Token
+
+Users authenticate via the login endpoint:
+
+```bash
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "joel@test.com",
+  "password": "123456"
+}
+```
+
+Response:
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+### Authenticated Requests
+
+Include the token in the Authorization header for all protected endpoints:
+
+```bash
+GET /api/board/my
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+<Note>
+  All business endpoints in TaskFlow require authentication. Only `/api/auth/register` and `/api/auth/login` are publicly accessible.
+</Note>
+
+## Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="Secret Key Management">
+    - Never hardcode the JWT key in source code
+    - Use environment variables or secure key vaults in production
+    - Rotate keys periodically
+    - Use a minimum 256-bit key for strong encryption
+  </Accordion>
+  
+  <Accordion title="Token Expiration">
+    - Set appropriate expiration times based on your security requirements
+    - Shorter expiration times (15-60 minutes) improve security
+    - Implement refresh token mechanism for better UX with short-lived tokens
+  </Accordion>
+  
+  <Accordion title="HTTPS in Production">
+    - Always use HTTPS in production environments
+    - Set `RequireHttpsMetadata = true` in production
+    - Tokens transmitted over HTTP can be intercepted
+  </Accordion>
+</AccordionGroup>
+
+## Accessing User Claims
+
+In your controllers, access the authenticated user's claims:
+
+```csharp
+var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+var email = User.FindFirst(ClaimTypes.Email)?.Value;
+var username = User.FindFirst(ClaimTypes.Name)?.Value;
+```
+
+This allows you to identify and authorize users for board access, task operations, and role-based permissions.
