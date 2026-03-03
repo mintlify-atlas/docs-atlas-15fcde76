@@ -1,0 +1,109 @@
+{
+  "projectType": "api-service",
+  "projectName": "TaskFlow",
+  "projectDescription": "A Kanban-style task management API built with ASP.NET Core, featuring JWT authentication, role-based permissions, and multi-user board collaboration.",
+  "theme": "aspen",
+  "primaryColor": "#2563eb",
+  "lightColor": "#60a5fa",
+  "darkColor": "#1e40af",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/authentication",
+              "concepts/boards",
+              "concepts/roles-permissions",
+              "concepts/tasks-columns"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/database",
+              "configuration/jwt",
+              "configuration/cors"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Authentication",
+            "pages": [
+              "api/auth/register",
+              "api/auth/login"
+            ]
+          },
+          {
+            "group": "Boards",
+            "pages": [
+              "api/boards/list-boards",
+              "api/boards/get-board",
+              "api/boards/create-board",
+              "api/boards/update-board",
+              "api/boards/delete-board",
+              "api/boards/join-board"
+            ]
+          },
+          {
+            "group": "Columns",
+            "pages": [
+              "api/columns/create-column",
+              "api/columns/update-column",
+              "api/columns/move-column",
+              "api/columns/delete-column"
+            ]
+          },
+          {
+            "group": "Tasks",
+            "pages": [
+              "api/tasks/create-task",
+              "api/tasks/update-task",
+              "api/tasks/move-task",
+              "api/tasks/delete-task"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "JWT-based authentication with secure token generation",
+    "Kanban board management with role-based access control",
+    "Task and column organization with drag-and-drop positioning",
+    "Multi-user collaboration via shareable join codes",
+    "Entity Framework Core with MySQL database integration"
+  ],
+  "publicApiSurface": [
+    "POST /api/auth/register - Register new user",
+    "POST /api/auth/login - Authenticate user",
+    "GET /api/board/my - List user's boards",
+    "GET /api/board/{id} - Get board details",
+    "POST /api/board - Create new board",
+    "PUT /api/board/{id} - Update board",
+    "DELETE /api/board/{id} - Delete board",
+    "POST /api/board/join - Join board with code",
+    "POST /api/column - Create column",
+    "PUT /api/column/{id} - Update column",
+    "PUT /api/column/{id}/move - Reorder column",
+    "DELETE /api/column/{id} - Delete column",
+    "POST /api/task - Create task",
+    "PUT /api/task/{id} - Update task",
+    "PUT /api/task/{id}/move - Move task",
+    "DELETE /api/task/{id} - Delete task"
+  ]
+}
